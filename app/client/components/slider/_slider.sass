@@ -1,0 +1,155 @@
+
+@import "./../../styles/config"
+
+.slider
+	margin-top: 150px
+	overflow: hidden
+
+	&__nav
+		width: 100%
+		display: flex
+		align-items: center
+		justify-content: flex-end
+
+		.arrow
+			width: 30px
+			height: 24px
+			display: inline-flex
+			align-items: center
+			justify-content: center
+			cursor: pointer
+
+			&--prev,
+			&--next
+				&:before
+					color: #a7a7a7
+					font: 700 em(9)/1 "FontAwesome"
+					transition: .2s ease-in-out
+
+				&:hover
+					&:before
+						color: $colorLinkHoverDefault
+
+			&--prev
+				&:before
+					content: '\f060'
+
+			&--next
+				border-left: 1px solid #eaeaea
+
+				&:before
+					content: '\f061'
+	&__list
+		width: 100%
+		height: 430px
+		margin-top: 20px
+		//display: flex
+		overflow: hidden
+		position: relative
+		transition: .3s ease-in-out
+	//align-items: flex-start
+	//justify-content: space-between
+
+	&__item
+		top: 0
+		left: 0
+		width: 275px
+		height: 430px
+		//float: left
+		position: absolute
+
+		&:not(:first-child)
+		//margin-left: 30px
+
+		&:hover
+			.slider__item__cart
+				transform: scale(1)
+
+			.slider__item__image
+				transform: scale(.9)
+
+			.slider__item__discount
+				display: none
+
+		&__header
+			width: 100%
+			height: 307px
+			overflow: hidden
+			position: relative
+
+		&__discount
+			top: 15px
+			left: 15px
+			height: 20px
+			padding-top: 1px
+			min-width: 40px
+			display: flex
+			position: absolute
+			align-items: center
+			justify-content: center
+			color: #ffffff
+			font-size: em(11)
+			user-select: none
+			background-color: #ff6766
+
+		&__cart
+			top: 0
+			left: 0
+			width: 100%
+			height: 100%
+			display: flex
+			transform: scale(0)
+			align-items: center
+			justify-content: center
+			position: absolute
+			transition: .2s ease-in-out
+			background-color: rgba(#fff, .7)
+			cursor: pointer
+			z-index: 99
+
+			svg
+				fill: #000
+				transition: fill .1s ease-in-out
+
+			&:hover
+				svg
+					fill: #000
+
+		&__image
+			width: 100%
+			height: auto
+			display: block
+			margin: 0 auto
+			transition: .2s ease-in-out
+
+		&__footer
+			margin-top: 18px
+
+		&__title
+			min-height: 42px
+			display: inline-block
+			color: #000000
+			font-size: em(16)
+			line-height: 20px
+			text-decoration: none
+
+		&__price
+			display: flex
+			font-size: em(16)
+			font-weight: 600
+
+			.price
+				&--default
+					color: #000000
+
+				&--new
+					color: #deb74e
+
+				&--old
+					margin-left: 5px
+					color: #a8aebb
+					text-decoration: line-through
+
+			.value
+//
+
