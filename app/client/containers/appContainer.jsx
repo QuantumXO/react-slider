@@ -22,12 +22,12 @@ class App extends Component{
                             <Slider
                                 id={'slider'}
                                 data={sliderData}
-                                arrows={false}
+                                arrows={true}
                                 classList={'slider--custom'}
                                 slidesToShow={"4"}
                                 infiniteScroll={false}
                                 autoScroll={true}
-                                //speed={3000}
+                                speed={3000}
                             />
                         </div>
                     </div>

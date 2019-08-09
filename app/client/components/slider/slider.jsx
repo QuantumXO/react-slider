@@ -27,7 +27,7 @@ class Slider extends Component{
         const $this = this;
 
         this.state = {
-            speed: speed || 1000,
+            speed: speed || 3000,
             slideWidth: 275,
             id: id || 'slider',
             stopOnHover: (typeof stopOnHover == "boolean") ? stopOnHover : true,
