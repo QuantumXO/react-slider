@@ -24,8 +24,8 @@ class App extends Component{
                                 data={sliderData}
                                 arrows={true}
                                 classList={'slider--custom'}
-                                slidesToShow={"4"}
-                                infiniteScroll={false}
+                                slidesToShow={4}
+                                infiniteScroll={true}
                                 autoScroll={true}
                                 speed={3000}
                             />

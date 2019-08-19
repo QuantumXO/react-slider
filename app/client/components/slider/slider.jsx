@@ -9,6 +9,7 @@ import PropTypes from "prop-types";
 import classNames from 'classnames';
 
 import RatingStars from '../../components/default/rating/ratingStars';
+import DiscountBlock from '../../components/default/discount/DiscountBlock';
 
 const bucket =
     (
@@ -23,7 +24,7 @@ class Slider extends Component{
     constructor(props){
         super(props);
 
-        let {id, arrows, data, classList, slidesToShow, infiniteScroll, autoScroll, stopOnHover, speed} = this.props;
+        let {id, arrows, data, classList, slidesToShow, infiniteScroll, autoScroll, stopOnHover, speed, slidesToScroll} = this.props;
         const $this = this;
 
         this.state = {
@@ -44,11 +45,13 @@ class Slider extends Component{
             numberOfSlides: data.length || 4,
             infiniteScroll: (typeof infiniteScroll == "boolean") ? infiniteScroll : false,
             autoScrollTimer: false,
+            clonedItemsArr: [],
+            animation: false,
         };
-
 
         this.prevSlide = this.prevSlide.bind(this);
         this.nextSlide = this.nextSlide.bind(this);
+        this.handleClick = this.handleClick.bind(this);
         this.stopAutoScroll = this.stopAutoScroll.bind(this);
         this.startAutoScroll = this.startAutoScroll.bind(this);
 
@@ -61,7 +64,42 @@ class Slider extends Component{
 
             return ((slideOffsetLeft + slideWidth) * index);
         };
-        
+
+        this.cloneItemsFunc = (startIndexOfSlide = 0) => {
+
+            if(!this.state.infiniteScroll){
+                return;
+            }else{
+
+                let clonedItemsNum = 0;
+                let currentCloneIndex = startIndexOfSlide;
+
+                for(let i = 0; i < this.props.slidesToShow; i++){
+
+                    if(currentCloneIndex < this.props.data.length - 1){
+                        currentCloneIndex = startIndexOfSlide + i;
+                    }else{
+                        currentCloneIndex = 0;
+                    }
+
+                    //console.log('this.cloneItemsFunc() -> currentCloneIndex', currentCloneIndex);
+
+                    this.setState((prevState) => ({
+                        clonedItemsArr: [
+                            ...prevState.clonedItemsArr,
+                            this.props.data[i]
+                        ]
+                    })
+                    );
+
+                    clonedItemsNum += 1;
+                }
+
+                return clonedItemsNum;
+
+            }
+        };
+
         if(this.state.autoScroll){
 
             let autoScrollTimer;
@@ -115,15 +153,27 @@ class Slider extends Component{
 
     componentDidMount() {
 
-        let {slidesToShow, numberOfSlides, autoScroll} =  this.state;
+        const clonedItemsNum = 0; //this.cloneItemsFunc();
+
+        let {slidesToShow, numberOfSlides, autoScroll, data} =  this.state;
+        let slideOffsetLeft;
+        let sliderListWidth;
 
         const $this = this;
         const sliderWrapNode = this.sliderRef.current;
         const sliderWrapWidth =  sliderWrapNode.offsetWidth;
         const slideNode = this.slidesRef.current;
         const slideWidth = slideNode.offsetWidth;
-        const slideOffsetLeft = (sliderWrapWidth - (slideWidth * slidesToShow)) / (slidesToShow - 1);  // (1250 - (275 * 1) / 0)
-        const sliderListWidth = (numberOfSlides * (slideWidth + slideOffsetLeft)) - slideOffsetLeft;  // (10 * (275 + NaN)) - NaN
+
+        if(slidesToShow > numberOfSlides){
+            slideOffsetLeft = Math.round((sliderWrapWidth - (slideWidth * numberOfSlides)) / (numberOfSlides - 1));  // (1250 - (275 * 5) / 4)
+        }else{
+            slideOffsetLeft = Math.round((sliderWrapWidth - (slideWidth * slidesToShow)) / (slidesToShow - 1));  // (1250 - (275 * 1) / 0)
+        }
+
+        //console.log('componentDidMount() -> ', clonedItemsNum);
+
+        sliderListWidth = Math.round(((numberOfSlides + clonedItemsNum) * (slideWidth + slideOffsetLeft)) - slideOffsetLeft);  // (5 * (275 + NaN)) - NaN
 
         this.setState(() =>
             ({
@@ -131,6 +181,7 @@ class Slider extends Component{
                 slideWidth,
                 sliderListWidth,
                 slideOffsetLeft,
+                numberOfSlides: data.length + clonedItemsNum,
             }),
             () => {
                 if(autoScroll){
@@ -140,11 +191,22 @@ class Slider extends Component{
             }
         );
 
-
     }
 
     shouldComponentUpdate(nextProps, nextState){
-        return this.state.currentSlidesSet != nextState.currentSlidesSet;
+
+        if(
+            this.state.currentSlidesSet != nextState.currentSlidesSet ||
+            this.state.slideOffsetLeft != nextState.slideOffsetLeft ||
+            this.state.numberOfSlides != nextState.numberOfSlides ||
+            this.state.clonedItemsArr != nextState.clonedItemsArr
+        ){
+            return true;
+        }else {
+            return false;
+        }
+
+
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -157,16 +219,29 @@ class Slider extends Component{
 
     prevSlide(){
 
-        const {currentSlidesSet, sliderListOffset, sliderWrapWidth, slideOffsetLeft, infiniteScroll, autoScroll} = this.state;
+        const {currentSlidesSet, sliderListOffset, sliderWrapWidth, slideOffsetLeft, infiniteScroll, autoScroll, numberOfSlides, slidesToShow, sliderListWidth, slideWidth} = this.state;
 
         if(
             infiniteScroll ||
             currentSlidesSet > 1
         ){
+
+            let slideSet,
+                listOffset;
+
+            if(currentSlidesSet > 1){
+                slideSet =  currentSlidesSet - 1;
+                listOffset = sliderListOffset + sliderWrapWidth + slideOffsetLeft;
+
+            }else{
+                slideSet = Math.ceil(numberOfSlides/slidesToShow);
+                listOffset = -((slideOffsetLeft + slideWidth) * (numberOfSlides - 2));
+            }
+
             this.setState(
                 {
-                    currentSlidesSet: currentSlidesSet - 1,                     // Увеличиваем счетчик сета слайдов
-                    sliderListOffset: sliderListOffset + sliderWrapWidth + slideOffsetLeft        // Смещаем слайдер влево
+                    currentSlidesSet: slideSet,         // Увеличиваем счетчик сета слайдов
+                    sliderListOffset: listOffset        // Смещаем слайдер влево
                 }, function () {
                     if(autoScroll){
                         this.startAutoScrollTimer();
@@ -178,44 +253,71 @@ class Slider extends Component{
 
     };
 
-    nextSlide = () =>{
+    nextSlide = () => {
 
-        const {slidesToShow, currentSlidesSet, numberOfSlides, sliderListOffset, sliderWrapWidth, slideOffsetLeft} = this.state;
+        const {slidesToShow, currentSlidesSet, numberOfSlides, sliderListOffset, sliderWrapWidth, slideOffsetLeft, infiniteScroll} = this.state;
 
         if(
-            numberOfSlides > slidesToShow &&                        // Показано слайдов меньше, чем их всего
-            (currentSlidesSet * slidesToShow) < numberOfSlides      // И текущий сет слайдов не последний
+            infiniteScroll ||
+            (
+                //numberOfSlides > slidesToShow &&                        // Показано слайдов меньше, чем их всего
+                (currentSlidesSet * slidesToShow) < numberOfSlides        // И текущий сет слайдов не последний
+            )
         ){
 
+            let slideSet,
+                listOffset;
+
+            if((currentSlidesSet * slidesToShow) < numberOfSlides){
+                slideSet =  currentSlidesSet + 1;
+                listOffset = sliderListOffset - sliderWrapWidth - slideOffsetLeft;
+            }else{
+                slideSet = 1;
+                listOffset = 0;
+            }
+
             this.setState(() => ({
-                currentSlidesSet: currentSlidesSet + 1,                     // Увеличиваем счетчик сета слайдов
-                sliderListOffset: sliderListOffset - sliderWrapWidth - slideOffsetLeft        // Смещаем слайдер влево
+                currentSlidesSet: slideSet,              // Увеличиваем счетчик сета слайдов
+                sliderListOffset: listOffset,            // Смещаем слайдер влево
+                //animation: false
             }));
         }
     };
 
     stopAutoScroll(){
-        this.stopAutoScrollTimer();
+
+        if(this.state.stopOnHover){
+            this.stopAutoScrollTimer();
+        }
+
     };
 
     startAutoScroll(){
 
-        const lastSlidesSet = Math.round(this.state.numberOfSlides/this.state.slidesToShow);
+        if(this.state.autoScroll){
 
-        if(
-            this.state.infiniteScroll ||
-            lastSlidesSet != this.state.currentSlidesSet
-        ){
-            this.startAutoScrollTimer();
+            const lastSlidesSet = Math.round(this.state.numberOfSlides/this.state.slidesToShow);
+
+            if(
+                this.state.infiniteScroll ||
+                lastSlidesSet != this.state.currentSlidesSet
+            ){
+                this.startAutoScrollTimer();
+            }
         }
+    };
+
+    handleClick = (e) => {
     };
 
     render(){
 
-        const {id, data, classList, sliderListOffset, sliderListWidth, arrows, slidesToShow, autoScroll} = this.state;
+        const {id, data, classList, sliderListOffset, sliderListWidth, arrows, slidesToShow, autoScroll, clonedItemsArr} = this.state;
 
         const sliderClasses = classNames('slider', this.state.classList);
+        const sliderListClasses = classNames('slider__list', this.state.animation && 'animation');
 
+        let clonedItems = [];
         const navWrap = arrows ?
             (
                 <div className="slider__nav">
@@ -224,51 +326,90 @@ class Slider extends Component{
                 </div>
             ) : null;
 
+        if(clonedItemsArr.length){
+
+
+            clonedItems = clonedItemsArr.map((clonedNode, i) => {
+
+                let indexForGetSlideOffset = i + data.length;
+
+                const slideOffset = this.getSlideOffset(indexForGetSlideOffset, slidesToShow);
+
+                return (
+                    <li
+                        key={i}
+                        className="slider__item cloned"
+                        //data-slide-index={index}
+                        ref={this.slidesRef}
+                        style={{left: slideOffset}}
+                        onClick={this.handleClick}
+                        onMouseEnter={autoScroll ? this.stopAutoScroll : null}
+                        onMouseLeave={autoScroll ? this.startAutoScroll : null}
+                    >
+                        <div className="slider__item__header">
+                            <DiscountBlock discount={clonedNode.discount} />
+                            <img src={clonedNode.images[0]} className="slider__item__image" alt={clonedNode.title} />
+                            <span className="slider__item__cart">{bucket}</span>
+
+                        </div>
+                        <div className="slider__item__footer">
+                            <a className="slider__item__title">{clonedNode.title}</a>
+                            <div className="slider__item__price">
+                                <div className={clonedNode.discount > 0 ? "price--new" : "price--default"}>
+                                    $<span className="value">{clonedNode.price}</span>
+                                </div>
+                                {clonedNode.oldPrice}
+                            </div>
+                            <RatingStars rating={clonedNode.rating} />
+                        </div>
+                    </li>
+                );
+            })
+
+        }
 
         const sliderBody = data.map((item, index) => {
 
             const {id, discount, images, title, price, oldPrice, rating} = item;
 
-
-            const slideOffset = this.getSlideOffset(index, slidesToShow);
-
-            const discountBlock = discount > 0 ?
-                (
-                    <span className="slider__item__discount">-{discount} %</span>
-                ) : '';
+            const slideOffset = this.getSlideOffset(index , slidesToShow);
 
             return (
-                <li key={id} className="slider__item"
-                    //data-slide-index={index}
-                    ref={this.slidesRef}
-                    style={{left: slideOffset}}
-                    onMouseEnter={autoScroll ? this.stopAutoScroll : null}
-                    onMouseLeave={autoScroll ? this.startAutoScroll : null}
-                >
-                    <div className="slider__item__header">
-                        {discountBlock}
-                        <img src={images[0]} className="slider__item__image" alt={title} />
-                        <span className="slider__item__cart">{bucket}</span>
+                <React.Fragment key={id}>
+                    <li className="slider__item"
+                        //data-slide-index={index}
+                        ref={this.slidesRef}
+                        style={{left: slideOffset}}
+                        onClick={this.handleClick}
+                        onMouseEnter={autoScroll ? this.stopAutoScroll : null}
+                        onMouseLeave={autoScroll ? this.startAutoScroll : null}
+                    >
+                        <div className="slider__item__header">
+                            <DiscountBlock discount={discount} />
+                            <img src={images[0]} className="slider__item__image" alt={title} />
+                            <span className="slider__item__cart">{bucket}</span>
 
-                    </div>
-                    <div className="slider__item__footer">
-                        <a className="slider__item__title">{title}</a>
-                        <div className="slider__item__price">
-                            <div className={discount > 0 ? "price--new" : "price--default"}>
-                                $<span className="value">{price}</span>
-                            </div>
-                            {oldPrice}
                         </div>
-                        <RatingStars rating={rating} />
-                    </div>
-                </li>
+                        <div className="slider__item__footer">
+                            <a className="slider__item__title">{title}</a>
+                            <div className="slider__item__price">
+                                <div className={discount > 0 ? "price--new" : "price--default"}>
+                                    $<span className="value">{price}</span>
+                                </div>
+                                {oldPrice}
+                            </div>
+                            <RatingStars rating={rating} />
+                        </div>
+                    </li>
+                    {(index == data.length -1) && clonedItems ? clonedItems : null}
+                </React.Fragment>
             )
         });
 
         return(
             <div id={id || null} className={sliderClasses} ref={this.sliderRef}>
                 {navWrap}
-                <ul className="slider__list" style={{marginLeft: sliderListOffset || 0, width: sliderListWidth}}>
+                <ul className={sliderListClasses} style={{marginLeft: sliderListOffset || 0, width: sliderListWidth}}>
                     {sliderBody}
                 </ul>
             </div>
